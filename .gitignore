@@ -72,10 +72,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-portfolio/node_modules/
-portfolio/dist/
-portfolio/dist-ssr/
-portfolio/*.local
 
 # OS files
 .DS_Store
