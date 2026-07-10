@@ -7,6 +7,10 @@ from typing import Optional, List, Dict, Any
 import pandas as pd
 import io
 import os
+import sys
+
+# Ensure root directory is in sys.path for Vercel deployment
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.scraper import scrape_website
 from app.ai_helper import (
