@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Financial & Website Intelligence Hub</title>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ApexCharts CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <!-- Marked.js for rendering markdown reports -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #080B11;
+            --bg-sidebar: #0C101B;
+            --bg-card: rgba(22, 28, 45, 0.4);
+            --bg-card-hover: rgba(22, 28, 45, 0.6);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(99, 102, 241, 0.3);
+            
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            
+            --color-primary: #6366F1;
+            --color-primary-glow: rgba(99, 102, 241, 0.15);
+            --color-profit: #10B981;
+            --color-profit-glow: rgba(16, 185, 129, 0.15);
+            --color-loss: #EF4444;
+            --color-loss-glow: rgba(239, 68, 68, 0.15);
+            --color-warning: #F59E0B;
+            
+            --sidebar-width: 260px;
+            --transition-speed: 0.25s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-main);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-primary);
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .sidebar-brand {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.15rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #FFF 30%, var(--color-primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-brand i {
+            -webkit-text-fill-color: initial;
+            background: linear-gradient(135deg, var(--color-primary), #818CF8);
+            color: #fff;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 20px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-grow: 1;
+        }
+
+        .sidebar-item a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.925rem;
+            font-weight: 500;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .sidebar-item.active a, .sidebar-item a:hover {
+            color: var(--text-primary);
+            background-color: rgba(99, 102, 241, 0.08);
+            border-left: 3px solid var(--color-primary);
+            padding-left: 13px;
+        }
+
+        .sidebar-item a i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* Main Content Container */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex-grow: 1;
+            padding: 30px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Top Header bar */
+        .top-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .page-title h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .page-title p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .api-key-input-container {
+            display: flex;
+            align-items: center;
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 4px 12px;
+            width: 320px;
+            transition: border-color var(--transition-speed);
+        }
+
+        .api-key-input-container:focus-within {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px var(--color-primary-glow);
+        }
+
+        .api-key-input-container i {
+            color: var(--text-muted);
+            margin-right: 8px;
+        }
+
+        .api-key-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 0.825rem;
+            width: 100%;
+            padding: 6px 0;
+        }
+
+        .api-key-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding-left: 6px;
+        }
+
+        .api-key-toggle-btn:hover {
+            color: var(--text-primary);
+        }
+
+        /* Metric Cards Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .metric-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: transparent;
+        }
+
+        .metric-card.profit::before { background: var(--color-profit); }
+        .metric-card.loss::before { background: var(--color-loss); }
+        .metric-card.revenue::before { background: var(--color-primary); }
+        .metric-card.overhead::before { background: var(--color-warning); }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-hover);
+            box-shadow: 0 10px 20px -10px rgba(0,0,0,0.5);
+            background-color: var(--bg-card-hover);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .metric-icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        .metric-card.profit .metric-icon-wrap { background: var(--color-profit-glow); color: var(--color-profit); }
+        .metric-card.loss .metric-icon-wrap { background: var(--color-loss-glow); color: var(--color-loss); }
+        .metric-card.revenue .metric-icon-wrap { background: var(--color-primary-glow); color: var(--color-primary); }
+        .metric-card.overhead .metric-icon-wrap { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
+
+        .metric-val {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-top: 4px;
+        }
+
+        .metric-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .metric-sub.positive { color: var(--color-profit); }
+        .metric-sub.negative { color: var(--color-loss); }
+
+        /* Dashboard Views */
+        .dashboard-view {
+            display: none;
+            flex-direction: column;
+            gap: 24px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .dashboard-view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Grid for graphs and panels */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        .panel-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            position: relative;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 14px;
+        }
+
+        .panel-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title i {
+            color: var(--color-primary);
+        }
+
+        /* Buttons and Inputs */
+        .btn {
+            background-color: var(--color-primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--color-primary-glow);
+        }
+
+        .btn-secondary {
+            background-color: rgba(255,255,255,0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255,255,255,0.1);
+            box-shadow: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-control {
+            background-color: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color var(--transition-speed);
+            width: 100%;
+        }
+
+        .form-control:focus {
+            border-color: var(--color-primary);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        /* Markdown report styles */
+        .markdown-report {
+            line-height: 1.6;
+            color: var(--text-primary);
+            font-size: 0.925rem;
+        }
+
+        .markdown-report h3 {
+            font-size: 1.15rem;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #fff;
+            border-left: 3px solid var(--color-primary);
+            padding-left: 10px;
+        }
+
+        .markdown-report h4 {
+            font-size: 1rem;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .markdown-report p {
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+
+        .markdown-report ul, .markdown-report ol {
+            margin-bottom: 12px;
+            padding-left: 20px;
+            color: var(--text-secondary);
+        }
+
+        .markdown-report li {
+            margin-bottom: 6px;
+        }
+
+        .markdown-report strong {
+            color: #fff;
+        }
+
+        .markdown-report code {
+            background-color: rgba(255,255,255,0.06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.825rem;
+            color: #F87171;
+        }
+
+        /* AI chat bubble panel */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 480px;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+
+        .chat-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .chat-bubble.user {
+            background-color: var(--color-primary);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-bubble.assistant {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-bubble.assistant strong {
+            color: #fff;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-chips {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-bottom: 10px;
+        }
+
+        .chip {
+            background-color: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+
+        .chip:hover {
+            border-color: var(--color-primary);
+            color: #fff;
+            background-color: var(--color-primary-glow);
+        }
+
+        /* CSV File Drag & Drop */
+        .csv-dropzone {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            color: var(--text-secondary);
+        }
+
+        .csv-dropzone:hover, .csv-dropzone.dragover {
+            border-color: var(--color-primary);
+            background-color: rgba(99, 102, 241, 0.03);
+            color: var(--text-primary);
+        }
+
+        .csv-dropzone i {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            color: var(--color-primary);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-badge.connected {
+            background-color: var(--color-profit-glow);
+            color: var(--color-profit);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-badge.disconnected {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .ai-glow-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(22, 28, 45, 0.4) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.05);
+        }
+
+        /* Custom notifications */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #0E131F;
+            border: 1px solid var(--color-primary);
+            border-left: 4px solid var(--color-primary);
+            padding: 14px 20px;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-brain-circuit"></i>
+            <span>ProfitAI Analytics</span>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="sidebar-item active" data-view="overview">
+                <a href="#overview">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Dashboard Overview</span>
+                </a>
+            </li>
+            <li class="sidebar-item" data-view="financials">
+                <a href="#financials">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Financial Metrics</span>
+                </a>
+            </li>
+            <li class="sidebar-item" data-view="website">
+                <a href="#website">
+                    <i class="fa-solid fa-globe"></i>
+                    <span>Website Connect</span>
+                </a>
+            </li>
+            <li class="sidebar-item" data-view="combined-report">
+                <a href="#report">
+                    <i class="fa-solid fa-folder-tree"></i>
+                    <span>Executive Report</span>
+                </a>
+            </li>
+            <li class="sidebar-item" data-view="chatbot">
+                <a href="#chatbot">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>AI CFO Assistant</span>
+                </a>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <p>V1.1 - Powered by Gemini</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main class="main-content">
+        <!-- Top Navigation / Settings -->
+        <header class="top-navbar">
+            <div class="page-title">
+                <h1 id="view-title">Dashboard Overview</h1>
+                <p id="view-subtitle">Consolidated operational indices and intelligence reporting.</p>
+            </div>
+            <div class="navbar-actions">
+                <div class="api-key-input-container">
+                    <i class="fa-solid fa-key"></i>
+                    <input type="password" id="gemini-api-key" class="api-key-input" placeholder="Enter Gemini API Key..." />
+                    <button class="api-key-toggle-btn" id="toggle-api-key-visibility" title="Toggle visibility">
+                        <i class="fa-solid fa-eye-slash"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- View 1: Overview Dashboard -->
+        <section id="view-overview" class="dashboard-view active">
+            <!-- Metrics Bar -->
+            <div class="metrics-grid">
+                <div class="metric-card revenue">
+                    <div class="metric-header">
+                        <span class="metric-title">Net Revenue</span>
+                        <div class="metric-icon-wrap"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
+                    </div>
+                    <div class="metric-val" id="metric-revenue">$0</div>
+                    <div class="metric-sub">Operating intake</div>
+                </div>
+                <div class="metric-card profit">
+                    <div class="metric-header">
+                        <span class="metric-title">Net Profit</span>
+                        <div class="metric-icon-wrap"><i class="fa-solid fa-coins"></i></div>
+                    </div>
+                    <div class="metric-val" id="metric-profit">$0</div>
+                    <div class="metric-sub" id="metric-margin">0% margin</div>
+                </div>
+                <div class="metric-card loss">
+                    <div class="metric-header">
+                        <span class="metric-title">COGS</span>
+                        <div class="metric-icon-wrap"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                    </div>
+                    <div class="metric-val" id="metric-cogs">$0</div>
+                    <div class="metric-sub" id="metric-gross-margin">0% gross margin</div>
+                </div>
+                <div class="metric-card overhead">
+                    <div class="metric-header">
+                        <span class="metric-title">OpEx Burn</span>
+                        <div class="metric-icon-wrap"><i class="fa-solid fa-receipt"></i></div>
+                    </div>
+                    <div class="metric-val" id="metric-opex">$0</div>
+                    <div class="metric-sub" id="metric-opex-ratio">0% of rev</div>
+                </div>
+            </div>
+
+            <!-- Visualization & Action Grid -->
+            <div class="dashboard-grid">
+                <!-- Visual Charts -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fa-solid fa-chart-gantt"></i>
+                            <span>Financial Distributions & Trends</span>
+                        </div>
+                    </div>
+                    <div id="financial-mix-chart"></div>
+                </div>
+                
+                <!-- Side Status Hub -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fa-solid fa-plug"></i>
+                            <span>System Integrations</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 6px;">Connected Site:</span>
+                            <div class="status-badge disconnected" id="site-status-badge">
+                                <i class="fa-solid fa-link-slash"></i> <span id="site-status-text">Disconnected</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 6px;">Expense Leverage ratio:</span>
+                            <div id="expense-burn-pie-chart" style="min-height: 160px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Quick Insight Panel -->
+            <div class="panel-card ai-glow-card">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>AI Executive Summary & Recommendations</span>
+                    </div>
+                    <button class="btn btn-secondary" onclick="analyzeFinancials()">
+                        <i class="fa-solid fa-arrows-rotate"></i> Recalculate AI Report
+                    </button>
+                </div>
+                <div class="markdown-report" id="overview-ai-report">
+                    <p>Financial numbers have been calculated. Loading AI evaluation...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- View 2: Financial Inputs -->
+        <section id="view-financials" class="dashboard-view">
+            <div class="dashboard-grid">
+                <!-- Interactive Form -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <span>Configure Company Ledger</span>
+                        </div>
+                    </div>
+                    <form id="financials-form" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div class="input-group">
+                            <label for="input-revenue">Gross Revenue ($)</label>
+                            <input type="number" id="input-revenue" class="form-control" placeholder="e.g. 1000000" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="input-cogs">Cost of Goods Sold (COGS) ($)</label>
+                            <input type="number" id="input-cogs" class="form-control" placeholder="e.g. 350000" required>
+                        </div>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="input-marketing">Marketing & Sales ($)</label>
+                                <input type="number" id="input-marketing" class="form-control" placeholder="e.g. 150000" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="input-rnd">Research & Product (R&D) ($)</label>
+                                <input type="number" id="input-rnd" class="form-control" placeholder="e.g. 100000" required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="input-overhead">Administrative & General Overhead ($)</label>
+                            <input type="number" id="input-overhead" class="form-control" placeholder="e.g. 200000" required>
+                        </div>
+                        <button type="submit" class="btn" style="margin-top: 10px;">
+                            <i class="fa-solid fa-floppy-disk"></i> Apply Ledger Updates
+                        </button>
+                    </form>
+                </div>
+
+                <!-- CSV File Upload -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fa-solid fa-file-csv"></i>
+                            <span>Import via CSV</span>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.825rem; color: var(--text-secondary);">
+                        Upload a standard CSV ledger file. Rows should contain the metric name followed by the numerical value (e.g. <code>Revenue, 500000</code>).
+                    </p>
+                    <div class="csv-dropzone" id="csv-dropzone">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <p style="font-size: 0.85rem; font-weight: 500;">Drag CSV file here or click to browse</p>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Supports standard CSV values</p>
+                        <input type="file" id="csv-file-input" style="display: none;" accept=".csv" />
+                    </div>
+                    <div style="font-size: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 12px; color: var(--text-muted);">
+                        <strong>CSV Mapping Keywords:</strong>
+                        <ul style="padding-left: 14px; margin-top: 4px;">
+                            <li>Revenue / Sales</li>
+                            <li>COGS / Cost of Goods</li>
+                            <li>Marketing / Advertising</li>
+                            <li>R&D / Product</li>
+                            <li>Overhead / Admin</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- View 3: Website Connect -->
+        <section id="view-website" class="dashboard-view">
+            <div class="dashboard-grid">
+                <!-- Connect panel -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fa-solid fa-network-wired"></i>
+                            <span>Establish Website Link</span>
+                        </div>
+                    </div>
+                    <form id="website-form" style="display: flex; flex-direction: column; gap: 16px;">
+                        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                            Enter your corporate website URL. Our system will extract branding coordinates, meta descriptions, and headers to synthesize key offerings.
+                        </p>
+                        <div class="input-group">
+                            <label for="input-url">Company Website URL</label>
+                            <input type="url" id="input-url" class="form-control" placeholder="e.g. https://mycompany.com" required>
+                        </div>
+                        <button type="submit" class="btn" id="connect-btn">
+                            <span class="spinner" id="connect-spinner"></span>
+                            <span id="connect-btn-text"><i class="fa-solid fa-link"></i> Crawl & Synthesize Brand</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Web Metadata -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fa-solid fa-code"></i>
+                            <span>Extracted Details</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.85rem;">
+                        <div>
+                            <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Page Title:</span>
+                            <span id="scraped-title" style="font-weight: 600;">(Not Scraped)</span>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Domain:</span>
+                            <span id="scraped-domain" style="font-family: monospace;">(Not Connected)</span>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Description:</span>
+                            <span id="scraped-description" style="color: var(--text-secondary); line-height: 1.4;">(No content loaded)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Site SWOT Analysis -->
+            <div class="panel-card ai-glow-card">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>AI Website Profile & SWOT Matrix</span>
+                    </div>
+                </div>
+                <div class="markdown-report" id="website-ai-report">
+                    <p>Connect your company website above to view AI audience analysis and corporate SWOT profile mapping.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- View 4: Executive Report -->
+        <section id="view-combined-report" class="dashboard-view">
+            <div class="panel-card ai-glow-card">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-compass-drafting"></i>
+                        <span>Strategic Growth & CFO Synthesis Report</span>
+                    </div>
+                    <button class="btn" onclick="generateCombinedReport()" id="report-btn">
+                        <span class="spinner" id="report-spinner"></span>
+                        <span id="report-btn-text"><i class="fa-solid fa-file-contract"></i> Regenerate Synthesis</span>
+                    </button>
+                </div>
+                <div class="markdown-report" id="combined-ai-report">
+                    <p>Synthesizing website profiles and company performance ledger values... Click the button above to manually compile.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- View 5: Chatbot Assistant -->
+        <section id="view-chatbot" class="dashboard-view">
+            <div class="panel-card ai-glow-card">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-user-tie"></i>
+                        <span>Consult virtual AI CFO</span>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted)">Context-aware of current financial matrices</span>
+                </div>
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-bubble assistant">
+                            Hello! I am your AI Business Analyst. I've analyzed your financials and company website details. You can ask me questions like:
+                            <br/><br/>
+                            • <em>"What expenses should we target for reduction?"</em><br/>
+                            • <em>"How does our marketing spend align with our target website audience?"</em><br/>
+                            • <em>"Give me a projection of profits if revenue increases by 15%."</em>
+                        </div>
+                    </div>
+                    <div class="chat-chips">
+                        <span class="chip" onclick="sendQuickPrompt('Calculate net margin and gross profit margin')">Calculate Margins</span>
+                        <span class="chip" onclick="sendQuickPrompt('Suggest cost reductions based on overhead')">Cut Overhead Costs</span>
+                        <span class="chip" onclick="sendQuickPrompt('How can we optimize marketing spend?')">Optimize Marketing</span>
+                        <span class="chip" onclick="sendQuickPrompt('Write a monthly growth simulation')">Growth simulation</span>
+                    </div>
+                    <form id="chat-form" class="chat-input-area">
+                        <input type="text" id="chat-input" class="form-control" placeholder="Ask your AI CFO a question..." autocomplete="off" required>
+                        <button type="submit" class="btn" id="chat-send-btn">
+                            <span class="spinner" id="chat-spinner"></span>
+                            <span id="chat-send-btn-text"><i class="fa-solid fa-paper-plane"></i></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-message">Action completed successfully</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Default Mock Data for high-fidelity presentation on load
+        let state = {
+            financials: {
+                revenue: 1250000,
+                cogs: 420000,
+                marketing: 280000,
+                rnd: 150000,
+                overhead: 220000
+            },
+            website: {
+                success: true,
+                url: "https://www.cloudcore-systems.com",
+                domain: "www.cloudcore-systems.com",
+                title: "CloudCore Systems | Hybrid Cloud Analytics & Cybersecurity Shield",
+                description: "CloudCore delivers enterprise-grade hybrid cloud management, continuous system monitoring, and automated threat defense shields for commercial SaaS businesses.",
+                headings: [
+                    "Empower Cloud Infrastructure",
+                    "Continuous Autonomous Threat Detection",
+                    "Reduce Operations Costs by 35%",
+                    "Seamless Integrations & Custom Dashboards"
+                ],
+                body_text: "We provide state-of-the-art hybrid cloud deployment systems. Our core software package features automated threat prevention layers, cost-optimizing virtualization, and continuous API response auditing. Companies worldwide rely on CloudCore to minimize server bills while retaining rigid security compliance."
+            },
+            chatHistory: []
+        };
+
+        // Charts handles
+        let distributionChart = null;
+        let opexChart = null;
+
+        // On document load
+        document.addEventListener("DOMContentLoaded", () => {
+            // Retrieve key from localStorage if exists
+            const savedKey = localStorage.getItem("gemini_api_key");
+            if (savedKey) {
+                document.getElementById("gemini-api-key").value = savedKey;
+            }
+
+            // Sync form inputs with default state
+            syncFormInputs();
+
+            // Set up UI views routing
+            setupNavigation();
+
+            // Initialize Charts
+            renderCharts();
+
+            // Trigger AI evaluations with mock data
+            analyzeFinancials();
+            analyzeWebsiteUI();
+            generateCombinedReport();
+
+            // Setup API key persistence
+            document.getElementById("gemini-api-key").addEventListener("change", (e) => {
+                localStorage.setItem("gemini_api_key", e.target.value);
+                showToast("Gemini API Key updated and saved.");
+                
+                // Refresh AI calls to apply new key
+                analyzeFinancials();
+                if (state.website.url) {
+                    analyzeWebsiteUI();
+                }
+                generateCombinedReport();
+            });
+
+            // Toggle visibility of API key
+            document.getElementById("toggle-api-key-visibility").addEventListener("click", () => {
+                const input = document.getElementById("gemini-api-key");
+                const icon = document.querySelector("#toggle-api-key-visibility i");
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.classList.replace("fa-eye-slash", "fa-eye");
+                } else {
+                    input.type = "password";
+                    icon.classList.replace("fa-eye", "fa-eye-slash");
+                }
+            });
+
+            // Financial form submit
+            document.getElementById("financials-form").addEventListener("submit", (e) => {
+                e.preventDefault();
+                state.financials.revenue = parseFloat(document.getElementById("input-revenue").value) || 0;
+                state.financials.cogs = parseFloat(document.getElementById("input-cogs").value) || 0;
+                state.financials.marketing = parseFloat(document.getElementById("input-marketing").value) || 0;
+                state.financials.rnd = parseFloat(document.getElementById("input-rnd").value) || 0;
+                state.financials.overhead = parseFloat(document.getElementById("input-overhead").value) || 0;
+                
+                showToast("Ledger values applied!");
+                analyzeFinancials();
+                generateCombinedReport();
+                // Return to overview
+                switchView("overview");
+            });
+
+            // Website connect form
+            document.getElementById("website-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const url = document.getElementById("input-url").value.trim();
+                if (!url) return;
+
+                // UI loading state
+                setLoading("connect", true);
+                try {
+                    const apiKey = document.getElementById("gemini-api-key").value;
+                    const response = await fetch("/api/connect-website", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ url: url, apiKey: apiKey })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        state.website = data.website_info;
+                        analyzeWebsiteUI();
+                        document.getElementById("website-ai-report").innerHTML = marked.parse(data.ai_report);
+                        
+                        showToast("Website connected & analyzed!");
+                        generateCombinedReport();
+                        switchView("overview");
+                    } else {
+                        showToast("Scraping issue: " + data.error, true);
+                        document.getElementById("website-ai-report").innerHTML = `<div style="color: var(--color-loss); padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px;"><i class="fa-solid fa-circle-exclamation"></i> ${data.ai_report}</div>`;
+                    }
+                } catch (err) {
+                    showToast("Error linking website.", true);
+                    console.error(err);
+                } finally {
+                    setLoading("connect", false);
+                }
+            });
+
+            // Chat input submit
+            document.getElementById("chat-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const input = document.getElementById("chat-input");
+                const message = input.value.trim();
+                if (!message) return;
+
+                input.value = "";
+                appendChatMessage("user", message);
+                
+                setLoading("chat", true);
+                try {
+                    const apiKey = document.getElementById("gemini-api-key").value;
+                    const response = await fetch("/api/chat", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            history: state.chatHistory,
+                            message: message,
+                            financials: state.financials,
+                            website: state.website,
+                            apiKey: apiKey
+                        })
+                    });
+                    const data = await response.json();
+                    appendChatMessage("assistant", data.response);
+                } catch (err) {
+                    appendChatMessage("assistant", "Sorry, I encountered an issue checking that prompt.");
+                    console.error(err);
+                } finally {
+                    setLoading("chat", false);
+                }
+            });
+
+            // Setup Drag & Drop for CSV
+            setupCsvUpload();
+        });
+
+        // Sync local form inputs to state variables
+        function syncFormInputs() {
+            document.getElementById("input-revenue").value = state.financials.revenue;
+            document.getElementById("input-cogs").value = state.financials.cogs;
+            document.getElementById("input-marketing").value = state.financials.marketing;
+            document.getElementById("input-rnd").value = state.financials.rnd;
+            document.getElementById("input-overhead").value = state.financials.overhead;
+            
+            document.getElementById("input-url").value = state.website.url;
+        }
+
+        // Navigation controls
+        function setupNavigation() {
+            document.querySelectorAll(".sidebar-item").forEach(item => {
+                item.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const view = item.getAttribute("data-view");
+                    switchView(view);
+                });
+            });
+        }
+
+        function switchView(viewName) {
+            document.querySelectorAll(".sidebar-item").forEach(i => i.classList.remove("active"));
+            document.querySelectorAll(".dashboard-view").forEach(v => v.classList.remove("active"));
+            
+            const selectedItem = document.querySelector(`.sidebar-item[data-view="${viewName}"]`);
+            const selectedView = document.getElementById(`view-${viewName}`);
+            
+            if (selectedItem) selectedItem.classList.add("active");
+            if (selectedView) selectedView.classList.add("active");
+            
+            // Adjust title metadata
+            const titleEl = document.getElementById("view-title");
+            const subEl = document.getElementById("view-subtitle");
+            
+            if (viewName === "overview") {
+                titleEl.innerText = "Dashboard Overview";
+                subEl.innerText = "Consolidated operational indices and intelligence reporting.";
+            } else if (viewName === "financials") {
+                titleEl.innerText = "Financial Inputs & Ledger";
+                subEl.innerText = "Input raw business profits, operating expenses, and margins.";
+            } else if (viewName === "website") {
+                titleEl.innerText = "Website Integration Hub";
+                subEl.innerText = "Extract target branding and service parameters from live websites.";
+            } else if (viewName === "combined-report") {
+                titleEl.innerText = "Executive Strategic Analysis";
+                subEl.innerText = "Integrated valuation modeling and AI growth proposals.";
+            } else if (viewName === "chatbot") {
+                titleEl.innerText = "AI CFO Chat Analyst";
+                subEl.innerText = "Query the virtual advisor on financial opportunities.";
+            }
+        }
+
+        // Setup Drag and Drop CSV uploads
+        function setupCsvUpload() {
+            const zone = document.getElementById("csv-dropzone");
+            const fileInput = document.getElementById("csv-file-input");
+
+            zone.addEventListener("click", () => fileInput.click());
+
+            zone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                zone.classList.add("dragover");
+            });
+
+            zone.addEventListener("dragleave", () => {
+                zone.classList.remove("dragover");
+            });
+
+            zone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                zone.classList.remove("dragover");
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    handleCsvFile(files[0]);
+                }
+            });
+
+            fileInput.addEventListener("change", (e) => {
+                if (e.target.files.length) {
+                    handleCsvFile(e.target.files[0]);
+                }
+            });
+        }
+
+        async function handleCsvFile(file) {
+            const formData = new FormData();
+            formData.append("file", file);
+            
+            showToast("Parsing ledger records...");
+            try {
+                const response = await fetch("/api/upload-csv", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    state.financials = data.financials;
+                    syncFormInputs();
+                    analyzeFinancials();
+                    generateCombinedReport();
+                    showToast("CSV imported successfully!");
+                    switchView("overview");
+                } else {
+                    showToast("Error parsing CSV data.", true);
+                }
+            } catch (err) {
+                showToast("File reading error.", true);
+                console.error(err);
+            }
+        }
+
+        // ApexCharts Rendering & Updating
+        function renderCharts() {
+            const optionsMix = {
+                series: [{
+                    name: 'Intake/Spend',
+                    type: 'column',
+                    data: [0, 0, 0, 0, 0]
+                }],
+                chart: {
+                    height: 290,
+                    type: 'line',
+                    toolbar: { show: false },
+                    foreColor: '#64748B'
+                },
+                stroke: {
+                    width: [0, 4]
+                },
+                plotOptions: {
+                    bar: {
+                        columnWidth: '50%',
+                        borderRadius: 6
+                    }
+                },
+                colors: ['#6366F1', '#10B981'],
+                dataLabels: {
+                    enabled: false
+                },
+                labels: ['Revenue', 'COGS', 'Marketing', 'R&D', 'Overhead'],
+                xaxis: {
+                    type: 'category'
+                },
+                yaxis: {
+                    labels: {
+                        formatter: function (value) {
+                            return "$" + value.toLocaleString();
+                        }
+                    }
+                },
+                tooltip: {
+                    theme: 'dark'
+                },
+                grid: {
+                    borderColor: 'rgba(255,255,255,0.05)'
+                }
+            };
+
+            distributionChart = new ApexCharts(document.querySelector("#financial-mix-chart"), optionsMix);
+            distributionChart.render();
+
+            const optionsPie = {
+                series: [25, 25, 25, 25],
+                chart: {
+                    type: 'donut',
+                    height: 180,
+                    foreColor: '#64748B'
+                },
+                labels: ['COGS', 'Marketing', 'R&D', 'Overhead'],
+                colors: ['#F43F5E', '#818CF8', '#6366F1', '#F59E0B'],
+                legend: {
+                    show: false
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                stroke: {
+                    colors: ['rgba(22, 28, 45, 0.4)']
+                },
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            size: '70%',
+                            labels: {
+                                show: true,
+                                name: { show: false },
+                                value: {
+                                    show: true,
+                                    fontSize: '14px',
+                                    color: '#F8FAFC',
+                                    formatter: function (val) {
+                                        return "$" + parseInt(val).toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                tooltip: {
+                    theme: 'dark'
+                }
+            };
+
+            opexChart = new ApexCharts(document.querySelector("#expense-burn-pie-chart"), optionsPie);
+            opexChart.render();
+        }
+
+        function updateCharts(metrics) {
+            if (distributionChart) {
+                distributionChart.updateSeries([{
+                    name: 'Intake/Spend',
+                    type: 'column',
+                    data: [
+                        metrics.revenue,
+                        metrics.cogs,
+                        metrics.marketing,
+                        metrics.rnd,
+                        metrics.overhead
+                    ]
+                }]);
+            }
+
+            if (opexChart) {
+                opexChart.updateSeries([
+                    metrics.cogs,
+                    metrics.marketing,
+                    metrics.rnd,
+                    metrics.overhead
+                ]);
+            }
+        }
+
+        // Fetch & render Financial metrics and AI Report
+        async function analyzeFinancials() {
+            try {
+                const apiKey = document.getElementById("gemini-api-key").value;
+                const response = await fetch("/api/analyze-financials", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        ...state.financials,
+                        apiKey: apiKey
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Update UI Metrics
+                document.getElementById("metric-revenue").innerText = "$" + data.metrics.revenue.toLocaleString();
+                
+                const netProfitEl = document.getElementById("metric-profit");
+                const netMarginEl = document.getElementById("metric-margin");
+                
+                netProfitEl.innerText = (data.metrics.net_profit >= 0 ? "" : "-") + "$" + Math.abs(data.metrics.net_profit).toLocaleString();
+                netMarginEl.innerText = data.metrics.net_margin + "% net margin";
+                
+                const profitCard = document.querySelector(".metric-card.profit");
+                if (data.metrics.net_profit < 0) {
+                    profitCard.classList.replace("profit", "loss");
+                    netMarginEl.style.color = "var(--color-loss)";
+                } else {
+                    profitCard.classList.replace("loss", "profit");
+                    netMarginEl.style.color = "var(--color-profit)";
+                }
+
+                document.getElementById("metric-cogs").innerText = "$" + data.metrics.cogs.toLocaleString();
+                document.getElementById("metric-gross-margin").innerText = data.metrics.gross_margin + "% gross margin";
+                
+                document.getElementById("metric-opex").innerText = "$" + data.metrics.operating_expenses.toLocaleString();
+                const opexRatio = data.metrics.revenue > 0 ? ((data.metrics.operating_expenses / data.metrics.revenue) * 100).toFixed(1) : 0;
+                document.getElementById("metric-opex-ratio").innerText = opexRatio + "% of revenue";
+
+                // Update charts
+                updateCharts(data.metrics);
+
+                // Render AI Text Report
+                document.getElementById("overview-ai-report").innerHTML = marked.parse(data.ai_report);
+            } catch (err) {
+                console.error(err);
+                showToast("Error computing financials", true);
+            }
+        }
+
+        // Sync Website data values in UI
+        function analyzeWebsiteUI() {
+            if (state.website && state.website.url) {
+                document.getElementById("scraped-title").innerText = state.website.title || "No Title Extracted";
+                document.getElementById("scraped-domain").innerText = state.website.domain || "No Domain";
+                document.getElementById("scraped-description").innerText = state.website.description || "No Description";
+
+                // Badges
+                const badge = document.getElementById("site-status-badge");
+                badge.classList.replace("disconnected", "connected");
+                badge.innerHTML = `<i class="fa-solid fa-link"></i> <span id="site-status-text">Connected</span>`;
+            }
+        }
+
+        // Trigger Synthesis report
+        async function generateCombinedReport() {
+            setLoading("report", true);
+            try {
+                const apiKey = document.getElementById("gemini-api-key").value;
+                const response = await fetch("/api/combined-report", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        financials: state.financials,
+                        website: state.website,
+                        apiKey: apiKey
+                    })
+                });
+                const data = await response.json();
+                document.getElementById("combined-ai-report").innerHTML = marked.parse(data.ai_report);
+            } catch (err) {
+                console.error(err);
+                document.getElementById("combined-ai-report").innerHTML = `<p style="color: var(--color-loss);">Error generating synthesis report. Ensure backend runs successfully.</p>`;
+            } finally {
+                setLoading("report", false);
+            }
+        }
+
+        // Chat helpers
+        function appendChatMessage(role, content) {
+            const container = document.getElementById("chat-messages");
+            const bubble = document.createElement("div");
+            bubble.className = `chat-bubble ${role}`;
+            
+            // Format HTML safely or render markdown
+            bubble.innerHTML = marked.parse(content);
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+
+            // Track history
+            state.chatHistory.push({ role: role, content: content });
+        }
+
+        function sendQuickPrompt(promptText) {
+            document.getElementById("chat-input").value = promptText;
+            document.getElementById("chat-send-btn").click();
+        }
+
+        // UI Loading Indicator switches
+        function setLoading(type, isLoading) {
+            const btnText = document.getElementById(`${type}-btn-text` || `${type}-send-btn-text`);
+            const spinner = document.getElementById(`${type}-spinner`);
+            const btn = document.getElementById(`${type}-btn` || `${type}-send-btn`);
+
+            if (spinner) {
+                spinner.style.display = isLoading ? "inline-block" : "none";
+            }
+            if (btnText) {
+                btnText.style.opacity = isLoading ? "0.6" : "1";
+            }
+            if (btn) {
+                btn.disabled = isLoading;
+            }
+        }
+
+        // Toast controller
+        function showToast(message, isError = false) {
+            const toast = document.getElementById("toast");
+            const msgEl = document.getElementById("toast-message");
+            const icon = toast.querySelector("i");
+
+            msgEl.innerText = message;
+            
+            if (isError) {
+                toast.style.borderColor = "var(--color-loss)";
+                toast.style.borderLeftColor = "var(--color-loss)";
+                icon.className = "fa-solid fa-triangle-exclamation";
+                icon.style.color = "var(--color-loss)";
+            } else {
+                toast.style.borderColor = "var(--color-primary)";
+                toast.style.borderLeftColor = "var(--color-primary)";
+                icon.className = "fa-solid fa-circle-check";
+                icon.style.color = "var(--color-primary)";
+            }
+
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
