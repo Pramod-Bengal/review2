@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-pandas
-requests
-beautifulsoup4
-google-generativeai
-python-multipart
-jinja2

@@ -1055,6 +1055,430 @@
         let distributionChart = null;
         let opexChart = null;
 
+        // Core business logic implemented in browser
+        function calculateMetrics(financials) {
+            const rev = parseFloat(financials.revenue || 0);
+            const cogs = parseFloat(financials.cogs || 0);
+            const mkt = parseFloat(financials.marketing || 0);
+            const rnd = parseFloat(financials.rnd || 0);
+            const overhead = parseFloat(financials.overhead || 0);
+            
+            const gross_profit = rev - cogs;
+            const operating_expenses = mkt + rnd + overhead;
+            const net_profit = gross_profit - operating_expenses;
+            
+            const gross_margin = rev > 0 ? (gross_profit / rev * 100) : 0;
+            const net_margin = rev > 0 ? (net_profit / rev * 100) : 0;
+            
+            return {
+                revenue: rev,
+                cogs: cogs,
+                marketing: mkt,
+                rnd: rnd,
+                overhead: overhead,
+                gross_profit: gross_profit,
+                operating_expenses: operating_expenses,
+                net_profit: net_profit,
+                gross_margin: Math.round(gross_margin * 100) / 100,
+                net_margin: Math.round(net_margin * 100) / 100
+            };
+        }
+
+        function getLocalFallbackFinancials(metrics) {
+            const net_profit = metrics.net_profit;
+            const net_margin = metrics.net_margin;
+            const gross_margin = metrics.gross_margin;
+            
+            let health = "Stable";
+            if (net_profit < 0) {
+                health = "CRITICAL (Unprofitable)";
+            } else if (net_margin > 25) {
+                health = "EXCELLENT (High Profitability)";
+            } else if (net_margin > 10) {
+                health = "HEALTHY";
+            }
+            
+            const grossMarginText = gross_margin > 50 
+                ? "Healthy baseline. Your production cost is under control." 
+                : "Sub-optimal gross margin. Suggest auditing raw materials, software costs, or direct labor tariffs to improve pricing leverage.";
+                
+            const netMarginText = net_margin > 15 
+                ? "Excellent operational leverage. Profits are flowing efficiently to the bottom line." 
+                : "Tight net margins. High operational overhead or marketing burn is diluting sales revenue.";
+                
+            const opex_denom = metrics.operating_expenses || 1;
+            const overheadPercent = Math.round((metrics.overhead / opex_denom) * 100 * 10) / 10;
+            const marketingPercent = Math.round((metrics.marketing / opex_denom) * 100 * 10) / 10;
+            
+            return `### 📊 Financial Health: **${health}** (Local Rule Engine Sandbox)
+
+*Note: Please configure a **Gemini API Key** in the top navigation bar to unlock advanced AI forecasting, SWOT reviews, and tailored strategic modeling.*
+
+#### Key Metric Analysis:
+1. **Gross Margin (${gross_margin}%):**
+   * ${grossMarginText}
+2. **Net Margin (${net_margin}%):**
+   * ${netMarginText}
+
+#### Recommended Action Items:
+* **Overhead Reduction:** Your overhead expenses constitute ${overheadPercent}% of your operational expenses. Audit non-essential subscription software and lease options.
+* **Customer Acquisition Cost (CAC):** Marketing accounts for ${marketingPercent}% of total operating spend. Ensure digital acquisition channels (SEO, PPC) yield positive lifetime value (LTV:CAC > 3x).`;
+        }
+
+        function getLocalFallbackWebsite(website_info) {
+            const title = website_info.title || 'Unknown Title';
+            const desc = website_info.description || 'No description found';
+            const domain = website_info.domain || '';
+            
+            const seoText = desc 
+                ? "contains a descriptive meta tag for search engines" 
+                : "is missing proper meta descriptions. This degrades organic search click-through rates (CTR)";
+                
+            return `### 🌐 Website Analysis Summary (Local Sandbox Engine)
+
+*Note: Set your **Gemini API Key** in the menu to generate a complete AI-driven brand positioning strategy and deep competitor benchmarking.*
+
+* **Scraped Domain:** \`${domain}\`
+* **Extracted Brand Title:** "${title}"
+* **Meta Summary:** "${desc}"
+
+#### Structural Observations:
+* **SEO Integrity:** The website ${seoText}.
+* **Brand Focus:** Based on headers, the company focuses on digital capabilities.
+* **Ad-hoc Recommendation:** Boost site speed and integrate clear call-to-actions (CTAs) above the fold to maximize website traffic.`;
+        }
+
+        async function getGeminiResponse(prompt, systemInstruction = "", apiKey = "") {
+            if (!apiKey || !apiKey.trim()) {
+                throw new Error("No API Key configured.");
+            }
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`;
+            const payload = {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
+            };
+            if (systemInstruction) {
+                payload.systemInstruction = {
+                    parts: [{ text: systemInstruction }]
+                };
+            }
+            
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                const errText = await response.text();
+                let errMsg = `HTTP Error ${response.status}`;
+                try {
+                    const parsedErr = JSON.parse(errText);
+                    if (parsedErr.error && parsedErr.error.message) {
+                        errMsg = parsedErr.error.message;
+                    }
+                } catch(e) {}
+                throw new Error(errMsg);
+            }
+            
+            const data = await response.json();
+            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
+                return data.candidates[0].content.parts[0].text;
+            } else {
+                throw new Error("Invalid response structure from Gemini API");
+            }
+        }
+
+        async function scrapeWebsite(url) {
+            let urlToFetch = url.trim();
+            if (!urlToFetch.startsWith('http://') && !urlToFetch.startsWith('https://')) {
+                urlToFetch = 'https://' + urlToFetch;
+            }
+            
+            try {
+                // Use allorigins.win free CORS proxy to fetch the raw HTML content
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(urlToFetch)}`;
+                const res = await fetch(proxyUrl);
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch website HTML: ${res.statusText}`);
+                }
+                const html = await res.text();
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, "text/html");
+                
+                // Extract Title
+                const title = doc.querySelector("title")?.textContent?.trim() || "";
+                
+                // Extract Meta Description
+                let description = "";
+                const metaDesc = doc.querySelector('meta[name="description"]') || doc.querySelector('meta[property="og:description"]');
+                if (metaDesc) {
+                    description = metaDesc.getAttribute("content")?.trim() || "";
+                }
+                
+                // Extract Headings (H1, H2, H3)
+                const headings = [];
+                doc.querySelectorAll("h1, h2, h3").forEach(h => {
+                    const text = h.textContent.trim().replace(/\s+/g, ' ');
+                    if (text && text.length > 3 && !headings.includes(text)) {
+                        headings.push(text);
+                    }
+                });
+                
+                // Extract paragraphs, avoiding scripts/styles/nav elements
+                const paragraphs = [];
+                doc.querySelectorAll("p, span, li").forEach(p => {
+                    if (p.closest("script, style, noscript, iframe, svg, header, footer, nav")) return;
+                    const text = p.textContent.trim().replace(/\s+/g, ' ');
+                    if (text && text.length > 25 && !paragraphs.includes(text)) {
+                        paragraphs.push(text);
+                    }
+                });
+                
+                let domain = "";
+                try {
+                    domain = new URL(urlToFetch).hostname;
+                } catch(e) {
+                    domain = urlToFetch;
+                }
+                
+                return {
+                    success: true,
+                    url: urlToFetch,
+                    domain: domain,
+                    title: title || domain,
+                    description: description || (paragraphs.length ? paragraphs.slice(0, 3).join(" ").substring(0, 150) + "..." : ""),
+                    headings: headings.slice(0, 20),
+                    body_text: paragraphs.slice(0, 30).join("\n").substring(0, 5000)
+                };
+            } catch (err) {
+                return {
+                    success: false,
+                    error: err.message,
+                    url: urlToFetch,
+                    title: "",
+                    description: "",
+                    headings: [],
+                    body_text: ""
+                };
+            }
+        }
+
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/);
+            const metrics_dict = {};
+            
+            for (const line of lines) {
+                const parts = line.split(',');
+                if (parts.length < 2) continue;
+                const metric_name = parts[0].trim().toLowerCase();
+                const value_str = parts.slice(1).join(',').replace(/["']/g, "").replace(/,/g, "").trim();
+                const val = parseFloat(value_str);
+                if (isNaN(val)) continue;
+                
+                if (metric_name.includes("revenue") || metric_name.includes("sales")) {
+                    metrics_dict["revenue"] = val;
+                } else if (metric_name.includes("cogs") || metric_name.includes("cost of goods")) {
+                    metrics_dict["cogs"] = val;
+                } else if (metric_name.includes("marketing") || metric_name.includes("advertising") || metric_name.includes("sales spend")) {
+                    metrics_dict["marketing"] = val;
+                } else if (metric_name.includes("r&d") || metric_name.includes("rnd") || metric_name.includes("research") || metric_name.includes("product")) {
+                    metrics_dict["rnd"] = val;
+                } else if (metric_name.includes("overhead") || metric_name.includes("general") || metric_name.includes("rent") || metric_name.includes("admin")) {
+                    metrics_dict["overhead"] = val;
+                }
+            }
+            
+            // Fill missing values
+            for (const key of ["revenue", "cogs", "marketing", "rnd", "overhead"]) {
+                if (!(key in metrics_dict)) {
+                    metrics_dict[key] = 0.0;
+                }
+            }
+            
+            return metrics_dict;
+        }
+
+        async function analyzeFinancialsAI(financials, apiKey = "") {
+            const metrics = calculateMetrics(financials);
+            if (!apiKey || !apiKey.trim()) {
+                return getLocalFallbackFinancials(metrics);
+            }
+            
+            const prompt = `
+            Perform a professional financial analysis on the following company metrics:
+            - Revenue: $${metrics.revenue.toLocaleString()}
+            - Cost of Goods Sold (COGS): $${metrics.cogs.toLocaleString()}
+            - Gross Profit: $${metrics.gross_profit.toLocaleString()} (Gross Margin: ${metrics.gross_margin}%)
+            - Operating Expenses:
+              - Marketing/Sales: $${metrics.marketing.toLocaleString()}
+              - Research/Product (R&D): $${metrics.rnd.toLocaleString()}
+              - General Overhead/Admin: $${metrics.overhead.toLocaleString()}
+              - Total OpEx: $${metrics.operating_expenses.toLocaleString()}
+            - Net Profit: $${metrics.net_profit.toLocaleString()} (Net Margin: ${metrics.net_margin}%)
+            
+            Please provide:
+            1. A concise Executive Summary of their financial performance.
+            2. Deep observations about expense patterns (R&D vs Marketing vs Overhead).
+            3. Actionable expense reduction strategies.
+            4. Strategic ideas to boost the net profit margin.
+            
+            Format the response cleanly in professional Markdown. Keep the tone sharp, analytical, and highly advisory (like a veteran CFO).
+            `;
+            
+            const sysInstruction = "You are a world-class CFO and financial analyst. Your reports are concise, professional, and full of highly practical, actionable financial advice.";
+            
+            try {
+                return await getGeminiResponse(prompt, sysInstruction, apiKey);
+            } catch (e) {
+                return `AI analysis failed (${e.message}). Displaying local evaluation:\n\n` + getLocalFallbackFinancials(metrics);
+            }
+        }
+
+        async function analyzeWebsiteAI(website_info, apiKey = "") {
+            if (!apiKey || !apiKey.trim()) {
+                return getLocalFallbackWebsite(website_info);
+            }
+            
+            const prompt = `
+            Analyze the scraped website profile for a company:
+            - URL: ${website_info.url}
+            - Domain: ${website_info.domain}
+            - Page Title: ${website_info.title}
+            - Meta Description: ${website_info.description}
+            - Headings Extracted: ${website_info.headings ? website_info.headings.join(", ") : ""}
+            - Content Snippet: ${website_info.body_text}
+            
+            Please provide:
+            1. An estimation of the Business Type & Primary Services/Offerings.
+            2. Core Value Proposition (USP).
+            3. Core Target Audience analysis.
+            4. A SWOT Analysis (Strengths, Weaknesses, Opportunities, Threats) based on their website presentation, SEO keywords, and messaging.
+            
+            Format as beautiful Markdown with clean headings.
+            `;
+            
+            const sysInstruction = "You are a professional growth marketer and SEO auditor. You can extract brand positioning and strategize on online marketing channels instantly from text snippets.";
+            
+            try {
+                return await getGeminiResponse(prompt, sysInstruction, apiKey);
+            } catch (e) {
+                return `AI analysis failed (${e.message}). Displaying local evaluation:\n\n` + getLocalFallbackWebsite(website_info);
+            }
+        }
+
+        async function generateCombinedAIReport(financials, website_info, apiKey = "") {
+            const metrics = calculateMetrics(financials);
+            if (!apiKey || !apiKey.trim()) {
+                const marketingPercent = Math.round(metrics.marketing / (metrics.revenue || 1) * 100 * 10) / 10;
+                return `### 🏢 Integrated AI Business Summary (Local Sandbox Engine)
+        
+*Connect a **Gemini API Key** to synthesize custom business metrics with live web insights.*
+        
+* **Brand Title:** "${website_info.title || 'Unknown Brand'}" (${website_info.domain || 'No domain connected'})
+* **Net Revenue:** $${metrics.revenue.toLocaleString()} | **Net Profit:** $${metrics.net_profit.toLocaleString()} (Margin: ${metrics.net_margin}%)
+        
+#### Marketing Alignment Check:
+Your marketing spend represents ${marketingPercent}% of total revenue. For a company offering digital services, this indicates a moderate marketing strategy. Ensure customer acquisition is optimized for the value propositions identified on your homepage.`;
+            }
+            
+            const prompt = `
+            Perform a combined strategic analysis for a company based on its financial performance and website profile.
+            
+            Financial Data:
+            - Revenue: $${metrics.revenue.toLocaleString()}
+            - Gross Profit Margin: ${metrics.gross_margin}%
+            - Marketing Spend: $${metrics.marketing.toLocaleString()} (${Math.round(metrics.marketing/(metrics.revenue || 1)*100 * 10)/10}% of Revenue)
+            - R&D/Product Development: $${metrics.rnd.toLocaleString()} (${Math.round(metrics.rnd/(metrics.revenue || 1)*100 * 10)/10}% of Revenue)
+            - Overhead: $${metrics.overhead.toLocaleString()} (${Math.round(metrics.overhead/(metrics.revenue || 1)*100 * 10)/10}% of Revenue)
+            - Net Profit Margin: ${metrics.net_margin}%
+            
+            Website Profile:
+            - Domain: ${website_info.domain}
+            - Title: ${website_info.title}
+            - Description: ${website_info.description}
+            - Snippet: ${website_info.body_text ? website_info.body_text.substring(0, 1000) : ""}
+            
+            Tasks:
+            1. Cross-reference the financial indicators with the website profile. Is the marketing spend appropriate for the type of business described on the website?
+            2. Does the allocation of R&D expenses align with the digital and product profile found on the homepage?
+            3. Identify 3 specific Growth and Efficiency experiments this company can perform next quarter combining website branding opportunities and financial constraints. For example, if cash is tight, recommend low-cost SEO or pricing adjustments. If margins are high and marketing is low, recommend aggressive growth experiments.
+            
+            Provide a highly detailed, executive advisory report in markdown.
+            `;
+            
+            const sysInstruction = "You are an elite Management Consultant and Business Advisor. You analyze operational numbers and product-market fit to produce powerful business solutions.";
+            
+            try {
+                return await getGeminiResponse(prompt, sysInstruction, apiKey);
+            } catch (e) {
+                return `AI combined synthesis failed (${e.message}).`;
+            }
+        }
+
+        async function chatWithAnalyst(history, user_message, financials, website_info, apiKey = "") {
+            const metrics = calculateMetrics(financials);
+            const context_summary = `
+            The user's business context:
+            - Revenue: $${metrics.revenue.toLocaleString()}
+            - COGS: $${metrics.cogs.toLocaleString()}
+            - Net Profit: $${metrics.net_profit.toLocaleString()} (Margin: ${metrics.net_margin}%)
+            - Operating Expenses: Marketing=$${metrics.marketing.toLocaleString()}, R&D=$${metrics.rnd.toLocaleString()}, Overhead=$${metrics.overhead.toLocaleString()}
+            
+            Website details:
+            - Domain: ${website_info.domain || 'Not connected'}
+            - Title: ${website_info.title || 'Not connected'}
+            - Description: ${website_info.description || 'Not connected'}
+            `;
+            
+            if (!apiKey || !apiKey.trim()) {
+                const msg_lower = user_message.toLowerCase();
+                const marketingPercent = Math.round(metrics.marketing / (metrics.revenue || 1) * 100 * 10) / 10;
+                if (msg_lower.includes("profit") || msg_lower.includes("net") || msg_lower.includes("revenue")) {
+                    return `Based on local metrics, your Revenue is **$${metrics.revenue.toLocaleString()}** with a Net Profit of **$${metrics.net_profit.toLocaleString()}** (Net Margin: **${metrics.net_margin}%**). If you connect a Gemini API key, I can perform advanced forecasting or outline growth plans.`;
+                } else if (msg_lower.includes("marketing") || msg_lower.includes("market")) {
+                    return `Your Marketing spend is **$${metrics.marketing.toLocaleString()}** (${marketingPercent}% of Revenue). To review customer acquisition pathways and growth loops, please connect your Gemini API Key.`;
+                } else if (msg_lower.includes("overhead") || msg_lower.includes("cost") || msg_lower.includes("expense")) {
+                    return `Operating expenses are **$${metrics.operating_expenses.toLocaleString()}** (COGS: $${metrics.cogs.toLocaleString()}, Marketing: $${metrics.marketing.toLocaleString()}, R&D: $${metrics.rnd.toLocaleString()}, Overhead: $${metrics.overhead.toLocaleString()}). I recommend auditing Overhead items if your margins need a boost.`;
+                } else if (msg_lower.includes("website") || msg_lower.includes("site")) {
+                    return `Connected Website: **${website_info.domain || 'None'}**. Title: *"${website_info.title || 'N/A'}"*. Please connect a Gemini API Key to conduct search-intent alignment analyses.`;
+                } else {
+                    return `Hello! I am your AI Business Analyst. I see your company has **$${metrics.revenue.toLocaleString()}** in revenue and **$${metrics.net_profit.toLocaleString()}** in net profits. Ask me about your expenses, margins, or connect a **Gemini API Key** in the top bar to activate full natural language answering!`;
+                }
+            }
+            
+            let history_prompt = "";
+            const lastTurns = history.slice(-10);
+            for (const msg of lastTurns) {
+                const role_label = msg.role === 'user' ? "User" : "Assistant";
+                history_prompt += `\n${role_label}: ${msg.content}`;
+            }
+            history_prompt += `\nUser: ${user_message}`;
+            
+            const prompt = `
+            You are chatting with a business owner.
+            Here is their business context:
+            ${context_summary}
+            
+            Conversation History:
+            ${history_prompt}
+            
+            Assistant:
+            `;
+            
+            const sysInstruction = "You are a professional Virtual CFO and AI Business Consultant. Use the user's financial details and scraped website profile to answer questions. Keep your answers concise, clear, and focused on profit expansion and business growth.";
+            
+            try {
+                return await getGeminiResponse(prompt, sysInstruction, apiKey);
+            } catch (e) {
+                return `AI Chat response failed due to API issue: ${e.message}. (Check your API key validity)`;
+            }
+        }
+
         // On document load
         document.addEventListener("DOMContentLoaded", () => {
             // Retrieve key from localStorage if exists
@@ -1129,24 +1553,27 @@
                 setLoading("connect", true);
                 try {
                     const apiKey = document.getElementById("gemini-api-key").value;
-                    const response = await fetch("/api/connect-website", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ url: url, apiKey: apiKey })
-                    });
+                    const scrapeRes = await scrapeWebsite(url);
                     
-                    const data = await response.json();
-                    if (data.success) {
-                        state.website = data.website_info;
+                    if (scrapeRes.success) {
+                        state.website = scrapeRes;
                         analyzeWebsiteUI();
-                        document.getElementById("website-ai-report").innerHTML = marked.parse(data.ai_report);
+                        
+                        const aiReport = await analyzeWebsiteAI(scrapeRes, apiKey);
+                        document.getElementById("website-ai-report").innerHTML = marked.parse(aiReport);
                         
                         showToast("Website connected & analyzed!");
                         generateCombinedReport();
                         switchView("overview");
                     } else {
-                        showToast("Scraping issue: " + data.error, true);
-                        document.getElementById("website-ai-report").innerHTML = `<div style="color: var(--color-loss); padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px;"><i class="fa-solid fa-circle-exclamation"></i> ${data.ai_report}</div>`;
+                        showToast("Scraping issue: " + scrapeRes.error, true);
+                        const fallbackReport = getLocalFallbackWebsite(scrapeRes);
+                        document.getElementById("website-ai-report").innerHTML = `
+                            <div style="color: var(--color-loss); padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; margin-bottom: 15px;">
+                                <i class="fa-solid fa-circle-exclamation"></i> Could not analyze website due to scraping error: ${scrapeRes.error}
+                            </div>
+                            <div>${marked.parse(fallbackReport)}</div>
+                        `;
                     }
                 } catch (err) {
                     showToast("Error linking website.", true);
@@ -1169,19 +1596,14 @@
                 setLoading("chat", true);
                 try {
                     const apiKey = document.getElementById("gemini-api-key").value;
-                    const response = await fetch("/api/chat", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            history: state.chatHistory,
-                            message: message,
-                            financials: state.financials,
-                            website: state.website,
-                            apiKey: apiKey
-                        })
-                    });
-                    const data = await response.json();
-                    appendChatMessage("assistant", data.response);
+                    const chatResponse = await chatWithAnalyst(
+                        state.chatHistory,
+                        message,
+                        state.financials,
+                        state.website,
+                        apiKey
+                    );
+                    appendChatMessage("assistant", chatResponse);
                 } catch (err) {
                     appendChatMessage("assistant", "Sorry, I encountered an issue checking that prompt.");
                     console.error(err);
@@ -1281,26 +1703,28 @@
         }
 
         async function handleCsvFile(file) {
-            const formData = new FormData();
-            formData.append("file", file);
-            
             showToast("Parsing ledger records...");
             try {
-                const response = await fetch("/api/upload-csv", {
-                    method: "POST",
-                    body: formData
-                });
-                const data = await response.json();
-                if (data.success) {
-                    state.financials = data.financials;
-                    syncFormInputs();
-                    analyzeFinancials();
-                    generateCombinedReport();
-                    showToast("CSV imported successfully!");
-                    switchView("overview");
-                } else {
-                    showToast("Error parsing CSV data.", true);
-                }
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const text = e.target.result;
+                    try {
+                        const financials = parseCSV(text);
+                        state.financials = financials;
+                        syncFormInputs();
+                        await analyzeFinancials();
+                        await generateCombinedReport();
+                        showToast("CSV imported successfully!");
+                        switchView("overview");
+                    } catch (parseErr) {
+                        showToast("Error parsing CSV data.", true);
+                        console.error(parseErr);
+                    }
+                };
+                reader.onerror = function() {
+                    showToast("File reading error.", true);
+                };
+                reader.readAsText(file);
             } catch (err) {
                 showToast("File reading error.", true);
                 console.error(err);
@@ -1431,47 +1855,45 @@
         async function analyzeFinancials() {
             try {
                 const apiKey = document.getElementById("gemini-api-key").value;
-                const response = await fetch("/api/analyze-financials", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        ...state.financials,
-                        apiKey: apiKey
-                    })
-                });
-
-                const data = await response.json();
+                const metrics = calculateMetrics(state.financials);
+                const aiReport = await analyzeFinancialsAI(state.financials, apiKey);
                 
                 // Update UI Metrics
-                document.getElementById("metric-revenue").innerText = "$" + data.metrics.revenue.toLocaleString();
+                document.getElementById("metric-revenue").innerText = "$" + metrics.revenue.toLocaleString();
                 
                 const netProfitEl = document.getElementById("metric-profit");
                 const netMarginEl = document.getElementById("metric-margin");
                 
-                netProfitEl.innerText = (data.metrics.net_profit >= 0 ? "" : "-") + "$" + Math.abs(data.metrics.net_profit).toLocaleString();
-                netMarginEl.innerText = data.metrics.net_margin + "% net margin";
+                netProfitEl.innerText = (metrics.net_profit >= 0 ? "" : "-") + "$" + Math.abs(metrics.net_profit).toLocaleString();
+                netMarginEl.innerText = metrics.net_margin + "% net margin";
                 
-                const profitCard = document.querySelector(".metric-card.profit");
-                if (data.metrics.net_profit < 0) {
-                    profitCard.classList.replace("profit", "loss");
+                const profitCard = document.getElementById("metric-profit").closest(".metric-card");
+                if (metrics.net_profit < 0) {
+                    if (profitCard) {
+                        profitCard.classList.remove("profit");
+                        profitCard.classList.add("loss");
+                    }
                     netMarginEl.style.color = "var(--color-loss)";
                 } else {
-                    profitCard.classList.replace("loss", "profit");
+                    if (profitCard) {
+                        profitCard.classList.remove("loss");
+                        profitCard.classList.add("profit");
+                    }
                     netMarginEl.style.color = "var(--color-profit)";
                 }
 
-                document.getElementById("metric-cogs").innerText = "$" + data.metrics.cogs.toLocaleString();
-                document.getElementById("metric-gross-margin").innerText = data.metrics.gross_margin + "% gross margin";
+                document.getElementById("metric-cogs").innerText = "$" + metrics.cogs.toLocaleString();
+                document.getElementById("metric-gross-margin").innerText = metrics.gross_margin + "% gross margin";
                 
-                document.getElementById("metric-opex").innerText = "$" + data.metrics.operating_expenses.toLocaleString();
-                const opexRatio = data.metrics.revenue > 0 ? ((data.metrics.operating_expenses / data.metrics.revenue) * 100).toFixed(1) : 0;
+                document.getElementById("metric-opex").innerText = "$" + metrics.operating_expenses.toLocaleString();
+                const opexRatio = metrics.revenue > 0 ? ((metrics.operating_expenses / metrics.revenue) * 100).toFixed(1) : 0;
                 document.getElementById("metric-opex-ratio").innerText = opexRatio + "% of revenue";
 
                 // Update charts
-                updateCharts(data.metrics);
+                updateCharts(metrics);
 
                 // Render AI Text Report
-                document.getElementById("overview-ai-report").innerHTML = marked.parse(data.ai_report);
+                document.getElementById("overview-ai-report").innerHTML = marked.parse(aiReport);
             } catch (err) {
                 console.error(err);
                 showToast("Error computing financials", true);
@@ -1487,8 +1909,11 @@
 
                 // Badges
                 const badge = document.getElementById("site-status-badge");
-                badge.classList.replace("disconnected", "connected");
-                badge.innerHTML = `<i class="fa-solid fa-link"></i> <span id="site-status-text">Connected</span>`;
+                if (badge) {
+                    badge.classList.remove("disconnected");
+                    badge.classList.add("connected");
+                    badge.innerHTML = `<i class="fa-solid fa-link"></i> <span id="site-status-text">Connected</span>`;
+                }
             }
         }
 
@@ -1497,20 +1922,11 @@
             setLoading("report", true);
             try {
                 const apiKey = document.getElementById("gemini-api-key").value;
-                const response = await fetch("/api/combined-report", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        financials: state.financials,
-                        website: state.website,
-                        apiKey: apiKey
-                    })
-                });
-                const data = await response.json();
-                document.getElementById("combined-ai-report").innerHTML = marked.parse(data.ai_report);
+                const aiReport = await generateCombinedAIReport(state.financials, state.website, apiKey);
+                document.getElementById("combined-ai-report").innerHTML = marked.parse(aiReport);
             } catch (err) {
                 console.error(err);
-                document.getElementById("combined-ai-report").innerHTML = `<p style="color: var(--color-loss);">Error generating synthesis report. Ensure backend runs successfully.</p>`;
+                document.getElementById("combined-ai-report").innerHTML = `<p style="color: var(--color-loss);">Error generating synthesis report.</p>`;
             } finally {
                 setLoading("report", false);
             }
