@@ -21,7 +21,19 @@ from app.ai_helper import (
     chat_with_analyst
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="AI Company Profit & Loss Intelligence Hub")
+
+# Enable CORS for frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Establish template directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

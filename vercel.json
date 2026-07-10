@@ -1,15 +1,13 @@
 {
-  "version": 2,
-  "builds": [
+  "cleanUrls": true,
+  "rewrites": [
     {
-      "src": "app/main.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
+      "source": "/api/:path*",
+      "destination": "https://review2-backend.onrender.com/api/:path*"
+    },
     {
-      "src": "/(.*)",
-      "dest": "app/main.py"
+      "source": "/(.*)",
+      "destination": "/app/templates/index.html"
     }
   ]
 }
